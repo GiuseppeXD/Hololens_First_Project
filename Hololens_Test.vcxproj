@@ -364,6 +364,7 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="Hololens_Test_TemporaryKey.pfx" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\PixelShader.hlsl">
