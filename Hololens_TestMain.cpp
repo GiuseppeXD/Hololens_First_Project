@@ -32,10 +32,23 @@ Hololens_TestMain::Hololens_TestMain(std::shared_ptr<DX::DeviceResources> const&
         OnGamepadAdded(nullptr, gamepad);
     }
 
+    // funcoes especificas hololens ---------
+
+    // Windows.Graphics.Holographic
+    // Contains classes that let apps display holograms in the world around you.
+    // https://docs.microsoft.com/en-us/uwp/api/windows.graphics.holographic?view=winrt-19041
+
     m_canGetHolographicDisplayForCamera = ApiInformation::IsPropertyPresent(winrt::name_of<HolographicCamera>(), L"Display");
+    // Returns true or false to indicate whether a specified event is present for a specified type.
+
+    // About Holographic Camera :
+    // Provides per-frame rendering functionality for a HolographicViewConfiguration on a HolographicDisplay.
+
     m_canGetDefaultHolographicDisplay = ApiInformation::IsMethodPresent(winrt::name_of<HolographicDisplay>(), L"GetDefault");
     m_canCommitDirect3D11DepthBuffer = ApiInformation::IsMethodPresent(winrt::name_of<HolographicCameraRenderingParameters>(), L"CommitDirect3D11DepthBuffer");
     m_canUseWaitForNextFrameReadyAPI = ApiInformation::IsMethodPresent(winrt::name_of<HolographicSpace>(), L"WaitForNextFrameReady");
+
+    // ApiInformation::IsMethodPresent = Returns true or false to indicate whether a specified method is present for a specified type.
 
     if (m_canGetDefaultHolographicDisplay)
     {
@@ -60,7 +73,11 @@ void Hololens_TestMain::SetHolographicSpace(HolographicSpace const& holographicS
 
 #ifdef DRAW_SAMPLE_CONTENT
     // Initialize the sample hologram.
-    m_spinningCubeRenderer = std::make_unique<SpinningCubeRenderer>(m_deviceResources);
+    if(triangle_teste)
+        m_triangleRenderer = std::make_unique<TriangleRenderer>(m_deviceResources);
+    else
+        m_spinningCubeRenderer = std::make_unique<SpinningCubeRenderer>(m_deviceResources);
+    //
     m_spatialInputHandler = std::make_unique<SpatialInputHandler>();
 #endif
 
@@ -200,7 +217,10 @@ HolographicFrame Hololens_TestMain::Update(HolographicFrame const& previousFrame
 
         // When a Pressed gesture is detected, the sample hologram will be repositioned
         // two meters in front of the user.
-        m_spinningCubeRenderer->PositionHologram(pose);
+        if(triangle_teste)
+            m_triangleRenderer->PositionHologram(pose);
+        else
+            m_spinningCubeRenderer->PositionHologram(pose);
     }
 #endif
 
@@ -215,7 +235,10 @@ HolographicFrame Hololens_TestMain::Update(HolographicFrame const& previousFrame
         //
 
 #ifdef DRAW_SAMPLE_CONTENT
-        m_spinningCubeRenderer->Update(m_timer);
+            if(triangle_teste)
+                m_triangleRenderer->Update(m_timer);
+            else
+                m_spinningCubeRenderer->Update(m_timer);
 #endif
     });
 
@@ -237,12 +260,19 @@ HolographicFrame Hololens_TestMain::Update(HolographicFrame const& previousFrame
         // In this example, we put the focus point at the center of the sample hologram.
         // You can also set the relative velocity and facing of the stabilization
         // plane using overloads of this method.
+        
         if (m_stationaryReferenceFrame != nullptr)
         {
-            renderingParameters.SetFocusPoint(
-                m_stationaryReferenceFrame.CoordinateSystem(),
-                m_spinningCubeRenderer->GetPosition()
-            );
+            if (triangle_teste)
+                renderingParameters.SetFocusPoint(
+                    m_stationaryReferenceFrame.CoordinateSystem(),
+                    m_triangleRenderer->GetPosition()
+                );
+            else
+                renderingParameters.SetFocusPoint(
+                    m_stationaryReferenceFrame.CoordinateSystem(),
+                    m_spinningCubeRenderer->GetPosition()
+                );
         }
 #endif
     }
@@ -341,7 +371,10 @@ bool Hololens_TestMain::Render(HolographicFrame const& holographicFrame)
             if (cameraActive)
             {
                 // Draw the sample hologram.
-                m_spinningCubeRenderer->Render();
+                if(triangle_teste)
+                    m_triangleRenderer->Render();
+                else
+                 m_spinningCubeRenderer->Render();
                 if (m_canCommitDirect3D11DepthBuffer)
                 {
                     // On versions of the platform that support the CommitDirect3D11DepthBuffer API, we can 
@@ -395,7 +428,10 @@ void Hololens_TestMain::OnPointerPressed()
 void Hololens_TestMain::OnDeviceLost()
 {
 #ifdef DRAW_SAMPLE_CONTENT
-    m_spinningCubeRenderer->ReleaseDeviceDependentResources();
+    if(triangle_teste)
+        m_triangleRenderer->ReleaseDeviceDependentResources();
+    else
+        m_spinningCubeRenderer->ReleaseDeviceDependentResources();
 #endif
 }
 
@@ -404,7 +440,10 @@ void Hololens_TestMain::OnDeviceLost()
 void Hololens_TestMain::OnDeviceRestored()
 {
 #ifdef DRAW_SAMPLE_CONTENT
-    m_spinningCubeRenderer->CreateDeviceDependentResources();
+    if(triangle_teste)
+        m_triangleRenderer->CreateDeviceDependentResources();
+    else
+        m_spinningCubeRenderer->CreateDeviceDependentResources();
 #endif
 }
 

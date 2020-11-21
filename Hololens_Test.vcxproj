@@ -347,6 +347,7 @@
     <ClInclude Include="Content\ShaderStructures.h" />
     <ClInclude Include="Content\SpinningCubeRenderer.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Content\TriangleRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppView.cpp" />
@@ -358,6 +359,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Content\TriangleRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

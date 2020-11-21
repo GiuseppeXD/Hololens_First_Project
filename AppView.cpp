@@ -41,9 +41,11 @@ void AppView::Initialize(CoreApplicationView const& applicationView)
 
     // At this point we have access to the device and we can create device-dependent
     // resources.
+    //make_share, returns an shared_ptr (ref = https://docs.microsoft.com/pt-br/cpp/cpp/how-to-create-and-use-shared-ptr-instances?view=msvc-160_
     m_deviceResources = std::make_shared<DX::DeviceResources>();
-
+    //make_unique, returns an unique_ptr (ref = https://docs.microsoft.com/pt-br/cpp/cpp/how-to-create-and-use-unique-ptr-instances?view=msvc-160)
     m_main = std::make_unique<Hololens_TestMain>(m_deviceResources);
+    //instanciado o hololens device Directx -> olhar construtor Hololens_TestMain
 }
 
 // Called when the CoreWindow object is created (or re-created).

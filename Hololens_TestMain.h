@@ -16,6 +16,7 @@
 #ifdef DRAW_SAMPLE_CONTENT
 #include "Content/SpinningCubeRenderer.h"
 #include "Content/SpatialInputHandler.h"
+#include "Content/TriangleRenderer.h"
 #endif
 
 // Updates, renders, and presents holographic content using Direct3D.
@@ -79,9 +80,12 @@ namespace Hololens_Test
         void UnregisterHolographicEventHandlers();
 
 #ifdef DRAW_SAMPLE_CONTENT
+        bool triangle_teste = true;
         // Renders a colorful holographic cube that's 20 centimeters wide. This sample content
         // is used to demonstrate world-locked rendering.
         std::unique_ptr<SpinningCubeRenderer>                       m_spinningCubeRenderer;
+
+        std::unique_ptr<TriangleRenderer>                           m_triangleRenderer;
 
         // Listens for the Pressed spatial input event.
         std::shared_ptr<SpatialInputHandler>                        m_spatialInputHandler;
