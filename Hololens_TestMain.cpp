@@ -374,7 +374,7 @@ bool Hololens_TestMain::Render(HolographicFrame const& holographicFrame)
                 if(triangle_teste)
                     m_triangleRenderer->Render();
                 else
-                 m_spinningCubeRenderer->Render();
+                    m_spinningCubeRenderer->Render();
                 if (m_canCommitDirect3D11DepthBuffer)
                 {
                     // On versions of the platform that support the CommitDirect3D11DepthBuffer API, we can 

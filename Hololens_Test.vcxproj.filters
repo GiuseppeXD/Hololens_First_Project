@@ -108,4 +108,17 @@
   <ItemGroup>
     <None Include="Hololens_Test_TemporaryKey.pfx" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\Downloads\4k\815884.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="TriangleVertexShader.hlsl">
+      <Filter>Content\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TrianglePixelShader.hlsl">
+      <Filter>Content\Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
 </Project>

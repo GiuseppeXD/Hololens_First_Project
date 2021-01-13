@@ -18,4 +18,15 @@ namespace Hololens_Test
         DirectX::XMFLOAT3 pos;
         DirectX::XMFLOAT3 color;
     };
+
+    struct VertexPosition
+    {
+        DirectX::XMFLOAT3 pos;
+    };
+
+    struct VertexPositionTexture
+    {
+        DirectX::XMFLOAT3 pos;
+        DirectX::XMFLOAT2 texCoord;
+    };
 }

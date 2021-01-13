@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "TriangleRenderer.h"
 #include "Common/DirectXHelper.h"
+#include "WICTextureLoader.h"
+#include <iostream>
 
 using namespace Hololens_Test;
 using namespace DirectX;
@@ -95,7 +97,7 @@ void TriangleRenderer::Render()
     const auto context = m_deviceResources->GetD3DDeviceContext();
 
     // Each vertex is one instance of the VertexPositionColor struct.
-    const UINT stride = sizeof(VertexPositionColor);
+    const UINT stride = sizeof(VertexPositionTexture);
     const UINT offset = 0;
     context->IASetVertexBuffers(
         0,
@@ -145,6 +147,9 @@ void TriangleRenderer::Render()
         0
     );
 
+    context->PSSetShaderResources(0, 1, m_triangleTexture.GetAddressOf());
+    context->PSSetSamplers(0, 1, m_triangleTexSamplerState.GetAddressOf());
+
     // Draw the objects.
     context->DrawIndexedInstanced(
         m_indexCount,   // Index count per instance.
@@ -157,6 +162,7 @@ void TriangleRenderer::Render()
 
 std::future<void> TriangleRenderer::CreateDeviceDependentResources()
 {
+    
     m_usingVprtShaders = m_deviceResources->GetDeviceSupportsVprt();
 
     // On devices that do support the D3D11_FEATURE_D3D11_OPTIONS3::
@@ -164,8 +170,10 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
     // we can avoid using a pass-through geometry shader to set the render
     // target array index, thus avoiding any overhead that would be 
     // incurred by setting the geometry shader stage.
-    std::wstring vertexShaderFileName = m_usingVprtShaders ? L"ms-appx:///VprtVertexShader.cso" : L"ms-appx:///VertexShader.cso";
 
+    std::wstring vertexShaderFileName = m_usingVprtShaders ? L"ms-appx:///VprtVertexShader.cso" : L"ms-appx:///TriangleVertexShader.cso";
+    
+    //std::wstring vertexShaderFileName = L"ms-appx:///TriangleVertexShader.cso";
     // Shaders will be loaded asynchronously.
 
     // After the vertex shader file is loaded, create the shader and input layout.
@@ -181,8 +189,10 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
     constexpr std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
     { {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
     } };
+    //{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
     winrt::check_hresult(
         m_deviceResources->GetD3DDevice()->CreateInputLayout(
@@ -193,8 +203,22 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
             &m_inputLayout
         ));
 
+    winrt::check_hresult(CreateWICTextureFromFile(m_deviceResources->GetD3DDevice(), L"815884.jpg", &m_Res, &m_triangleTexture));
+
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateSamplerState(&sampDesc, &m_triangleTexSamplerState));
+
     // After the pixel shader file is loaded, create the shader and constant buffer.
-    std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///PixelShader.cso");
+    std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///TrianglePixelShader.cso");
     winrt::check_hresult(
         m_deviceResources->GetD3DDevice()->CreatePixelShader(
             pixelShaderFileData.data(),
@@ -210,6 +234,8 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
             nullptr,
             &m_modelConstantBuffer
         ));
+
+    // m_usingVprtShaders = FALSE;
 
     if (!m_usingVprtShaders)
     {
@@ -230,14 +256,27 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
     // Note that the cube size has changed from the default DirectX app
     // template. Windows Holographic is scaled in meters, so to draw the
     // cube at a comfortable size we made the cube width 0.2 m (20 cm).
-    static const std::array<VertexPositionColor, 6> cubeVertices =
+    static const std::array<VertexPositionTexture, 6> cubeVertices =
     { {
-        { XMFLOAT3(0.0f, 0.2f, -0.1f), XMFLOAT3(0.5f, 0.0f, 0.0f) },
-        { XMFLOAT3(0.2f, 0.0f,  -0.1f), XMFLOAT3(0.0f, 0.5f, 0.0f) },
-        { XMFLOAT3(-0.2f,  0.0f, -0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },
-        { XMFLOAT3(0.0f, 0.2f, 0.1f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(0.2f, 0.0f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-0.2f,  0.0f, 0.1f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
+            //VERTEX - COLOR
+        //{ XMFLOAT3(0.0f, 0.2f, -0.1f), XMFLOAT3(0.5f, 0.0f, 0.0f) },
+        //{ XMFLOAT3(0.2f, 0.0f,  -0.1f), XMFLOAT3(0.0f, 0.5f, 0.0f) },
+        //{ XMFLOAT3(-0.2f,  0.0f, -0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },
+        //{ XMFLOAT3(0.0f, 0.2f, 0.1f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        //{ XMFLOAT3(0.2f, 0.0f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        //{ XMFLOAT3(-0.2f,  0.0f, 0.1f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
+
+        { XMFLOAT3(0.0f, 0.2f, -0.1f), XMFLOAT2(0.0f,0.0f) },    // 0
+        { XMFLOAT3(0.2f, 0.0f,  -0.1f), XMFLOAT2(0.0f,1.0f) },   // 1
+        { XMFLOAT3(-0.2f,  0.0f, -0.1f), XMFLOAT2(0.0f,1.0f) },  // 2
+        { XMFLOAT3(0.0f, 0.2f, 0.1f), XMFLOAT2(1.0f,0.0f) },     // 3
+        { XMFLOAT3(0.2f, 0.0f,  0.1f), XMFLOAT2(1.0f,1.0f) },    // 4
+        { XMFLOAT3(-0.2f,  0.0f, 0.1f), XMFLOAT2(1.0f,1.0f) },   // 5
+
+        //{ XMFLOAT3(0.2f, 0.2f, -0.1f), XMFLOAT2(1.0f,0.0f) }, //1
+        //{ XMFLOAT3(-0.2f, 0.2f,  -0.1f), XMFLOAT2(0.0f,0.0f) }, //2
+        //{ XMFLOAT3(-0.2f,  -0.2f, -0.1f), XMFLOAT2(0.0f,1.0f) }, //3
+        //{ XMFLOAT3(0.2f,  -0.2f, -0.1f), XMFLOAT2(1.0f,1.0f) }, //4
     } };
 
     D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
@@ -260,12 +299,15 @@ std::future<void> TriangleRenderer::CreateDeviceDependentResources()
     // Note that the winding order is clockwise by default.
     constexpr std::array<unsigned short, 18> cubeIndices =
     { {
-        0,1,2, // teste
+        0,1,2, // prisma
         0,3,1,
         3,4,1,
         3,5,4,
         3,0,5,
         0,2,5
+
+        //2,1,4,
+        //4,3,2
     } };
 
     m_indexCount = static_cast<unsigned int>(cubeIndices.size());
@@ -297,4 +339,7 @@ void TriangleRenderer::ReleaseDeviceDependentResources()
     m_modelConstantBuffer.Reset();
     m_vertexBuffer.Reset();
     m_indexBuffer.Reset();
+    m_Res.Reset();
+    m_triangleTexture.Reset();
+    m_triangleTexSamplerState.Reset();
 }
