@@ -102,4 +102,7 @@
   <ItemGroup>
     <None Include="Hololens_Test_TemporaryKey.pfx" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\Test_Texture\testInput.dds" />
+  </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SpinningCubeRenderer.h"
 #include "Common/DirectXHelper.h"
+#include "DDSTextureLoader.h"
 
 using namespace Hololens_Test;
 using namespace DirectX;
@@ -145,6 +146,9 @@ void SpinningCubeRenderer::Render()
         0
     );
 
+    context->PSSetShaderResources(0, 1, m_triangleTexture.GetAddressOf());
+    context->PSSetSamplers(0, 1, m_triangleTexSamplerState.GetAddressOf());
+
     // Draw the objects.
     context->DrawIndexedInstanced(
         m_indexCount,   // Index count per instance.
@@ -181,7 +185,7 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
     constexpr std::array<D3D11_INPUT_ELEMENT_DESC, 2> vertexDesc =
         { {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         } };
 
     winrt::check_hresult(
@@ -192,6 +196,20 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
             static_cast<UINT>(vertexShaderFileData.size()),
             &m_inputLayout
         ));
+
+    winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"testInput.dds", &m_Res, &m_triangleTexture));
+    
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MAXIMUM_ANISOTROPIC;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateSamplerState(&sampDesc, &m_triangleTexSamplerState));
 
     // After the pixel shader file is loaded, create the shader and constant buffer.
     std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///PixelShader.cso");
@@ -230,16 +248,30 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
     // Note that the cube size has changed from the default DirectX app
     // template. Windows Holographic is scaled in meters, so to draw the
     // cube at a comfortable size we made the cube width 0.2 m (20 cm).
-    static const std::array<VertexPositionColor, 8> cubeVertices =
+    static const std::array<VertexPositionColor, 12> cubeVertices =
         { {
-            { XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
-            { XMFLOAT3(-0.1f, -0.1f,  0.1f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-            { XMFLOAT3(-0.1f,  0.1f,  0.1f), XMFLOAT3(0.0f, 1.0f, 1.0f) },
-            { XMFLOAT3( 0.1f, -0.1f, -0.1f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-            { XMFLOAT3( 0.1f, -0.1f,  0.1f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
-            { XMFLOAT3( 0.1f,  0.1f, -0.1f), XMFLOAT3(1.0f, 1.0f, 0.0f) },
-            { XMFLOAT3( 0.1f,  0.1f,  0.1f), XMFLOAT3(1.0f, 1.0f, 1.0f) },
+            /*{ XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(1.0f, 1.0f, 0.5f) },
+            { XMFLOAT3(-0.1f, -0.1f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.5f) },
+            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(1.0f, 0.0f, 0.5f) },
+            { XMFLOAT3(-0.1f,  0.1f,  0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },*/
+            // - x
+            { XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(1.0f, 1.0f, 0.5f) },
+            { XMFLOAT3(-0.1f, -0.1f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.5f) },
+            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(1.0f, 0.0f, 0.5f) },
+            { XMFLOAT3(-0.1f,  0.1f,  0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },
+
+            // -z
+            { XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(0.5f, 1.0f, 0.0f) },
+            { XMFLOAT3(0.1f, -0.1f, -0.1f), XMFLOAT3(0.5f, 1.0f, 1.0f) },
+            { XMFLOAT3(0.1f,  0.1f, -0.1f), XMFLOAT3(0.5f, 0.0f, 1.0f) },
+            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(0.5f, 0.0f, 0.0f) },
+
+            // +y
+            { XMFLOAT3(-0.1f, 0.1f, -0.1f), XMFLOAT3(1.0f, 0.5f, 0.0f) },
+            { XMFLOAT3(0.1f, 0.1f, -0.1f), XMFLOAT3(1.0f, 0.5f, 1.0f) },
+            { XMFLOAT3(0.1f, 0.1f,  0.1f), XMFLOAT3(0.0f, 0.5f, 1.0f) },
+            { XMFLOAT3(-0.1f, 0.1f,  0.1f), XMFLOAT3(0.0f, 0.5f, 0.0f) },
+            
         } };
 
     D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
@@ -265,20 +297,11 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
             2,1,0, // -x
             2,3,1,
 
-            6,4,5, // +x
-            6,5,7,
+            4,5,6, // -z
+            4,6,7,
 
-            0,1,5, // -y
-            0,5,4,
-
-            2,6,7, // +y
-            2,7,3,
-
-            0,4,6, // -z
-            0,6,2,
-
-            1,3,7, // +z
-            1,7,5,
+            8,9,10, // +y
+            8,10,11,
         } };
 
     m_indexCount = static_cast<unsigned int>(cubeIndices.size());

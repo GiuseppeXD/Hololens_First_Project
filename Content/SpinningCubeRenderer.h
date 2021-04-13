@@ -35,6 +35,9 @@ namespace Hololens_Test
         Microsoft::WRL::ComPtr<ID3D11GeometryShader>    m_geometryShader;
         Microsoft::WRL::ComPtr<ID3D11PixelShader>       m_pixelShader;
         Microsoft::WRL::ComPtr<ID3D11Buffer>            m_modelConstantBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Resource>          m_Res;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_triangleTexture;
+        Microsoft::WRL::ComPtr<ID3D11SamplerState>      m_triangleTexSamplerState;
 
         // System resources for cube geometry.
         ModelConstantBuffer                             m_modelConstantBufferData;
