@@ -2,6 +2,10 @@
 #include "SpinningCubeRenderer.h"
 #include "Common/DirectXHelper.h"
 #include "DDSTextureLoader.h"
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iostream>
 
 using namespace Hololens_Test;
 using namespace DirectX;
@@ -12,6 +16,67 @@ using namespace winrt::Windows::UI::Input::Spatial;
 SpinningCubeRenderer::SpinningCubeRenderer(std::shared_ptr<DX::DeviceResources> const& deviceResources) :
     m_deviceResources(deviceResources)
 {
+    std::ifstream my_file;
+    //my_file.open("bonsai.1dt", std::ios_base::in);
+    my_file.open("brain.1dt", std::ios_base::in);
+    //my_file.open("panoramix.1dt", std::ios_base::in);
+    //my_file.open("skull.1dt", std::ios_base::in);
+    //my_file.open("lobast.1dt", std::ios_base::in);
+    //my_file.open("nucleon.1dt", std::ios_base::in);
+    //my_file.open("engine.1dt", std::ios_base::in);
+    //my_file.open("teapot.1dt", std::ios_base::in);
+    //my_file.open("hydrogen_atom.1dt", std::ios_base::in);
+    if (!my_file) {
+        std::cout << "Error" << std::endl;
+    }
+
+    float qnt;
+    std::string tsc;
+    std::getline(my_file, tsc);
+    std::istringstream in(tsc);
+    in >> qnt;
+    int tmp = qnt * 4;
+
+    float* transferFuncValues = new float[tmp];
+
+    if (!transferFuncValues) {
+        std::cout << "Error" << std::endl;
+    }
+
+    int i = 0;
+    for (std::string line; std::getline(my_file, line); ) {
+        std::istringstream in(line);
+
+        in >> transferFuncValues[i] >> transferFuncValues[i + 1] >> transferFuncValues[i + 2] >> transferFuncValues[i + 3];
+        i += 4;
+    }
+
+    D3D11_TEXTURE1D_DESC transferFuncDesc;
+    transferFuncDesc.Width = 256;
+    transferFuncDesc.MipLevels = 1;
+    transferFuncDesc.ArraySize = 1;
+    transferFuncDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    transferFuncDesc.Usage = D3D11_USAGE_DEFAULT;
+    transferFuncDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    transferFuncDesc.CPUAccessFlags = 0;
+    transferFuncDesc.MiscFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA transferFuncData;
+    transferFuncData.pSysMem = transferFuncValues;
+    transferFuncData.SysMemPitch = 0;
+    transferFuncData.SysMemSlicePitch = 0;
+
+    ID3D11Texture1D* transferFunc;
+
+    winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateTexture1D(&transferFuncDesc, &transferFuncData, &transferFunc));
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
+    srDesc.Format = transferFuncDesc.Format;
+    srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
+    srDesc.Texture1D.MostDetailedMip = 0;
+    srDesc.Texture1D.MipLevels = 1;
+
+    winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateShaderResourceView(transferFunc, &srDesc, &m_transferFunc));
     CreateDeviceDependentResources();
 }
 
@@ -24,27 +89,38 @@ void SpinningCubeRenderer::PositionHologram(SpatialPointerPose const& pointerPos
         // Get the gaze direction relative to the given coordinate system.
         const float3 headPosition = pointerPose.Head().Position();
         const float3 headDirection = pointerPose.Head().ForwardDirection();
+        //const float3 headDirection = float3(0.0f, 0.5f, 1.0f);
+
+
+        const XMVECTORF32 eye = { headPosition.x, headPosition.y, headPosition.z, 0.0f };
+        std::cout << "OH GOD" << std::endl;
+        std::cout << eye << std::endl;
+
+        XMStoreFloat4(&m_eyeBufferData, eye);
 
         // The hologram is positioned two meters along the user's gaze direction.
-        constexpr float distanceFromUser = 2.0f; // meters
+        constexpr float distanceFromUser = 0.38f; // meters
         const float3 gazeAtTwoMeters = headPosition + (distanceFromUser * headDirection);
 
         // This will be used as the translation component of the hologram's
         // model transform.
         SetPosition(gazeAtTwoMeters);
+
+        // Update the model transform buffer for the hologram.
+        
     }
 }
 
 // Called once per frame. Rotates the cube, and calculates and sets the model matrix
 // relative to the position transform indicated by hologramPositionTransform.
-void SpinningCubeRenderer::Update(DX::StepTimer const& timer)
+void SpinningCubeRenderer::Update(DX::StepTimer const& timer, winrt::Windows::Foundation::Numerics::float3 const& pointerPose)
 {
     // Rotate the cube.
     // Convert degrees to radians, then convert seconds to rotation angle.
     const float    radiansPerSecond = XMConvertToRadians(m_degreesPerSecond);
-    const double   totalRotation = timer.GetTotalSeconds() * radiansPerSecond;
+    const double   totalRotation = timer.GetTotalSeconds() * radiansPerSecond * 5;
     const float    radians = static_cast<float>(fmod(totalRotation, XM_2PI));
-    const XMMATRIX modelRotation = XMMatrixRotationY(-radians);
+    const XMMATRIX modelRotation = XMMatrixRotationY(0);
 
     // Position the cube.
     const XMMATRIX modelTranslation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
@@ -60,6 +136,12 @@ void SpinningCubeRenderer::Update(DX::StepTimer const& timer)
     // matrix is transposed to prepare it for the shader.
     XMStoreFloat4x4(&m_modelConstantBufferData.model, XMMatrixTranspose(modelTransform));
 
+    const XMVECTORF32 eye = { pointerPose.x, pointerPose.y, pointerPose.z, 0.0f };
+    XMStoreFloat4(&m_modelConstantBufferData.eye, eye);
+    XMStoreFloat4(&m_eyeBufferData, eye);
+
+
+
     // Loading is asynchronous. Resources must be created before they can be updated.
     if (!m_loadingComplete)
     {
@@ -67,17 +149,9 @@ void SpinningCubeRenderer::Update(DX::StepTimer const& timer)
     }
 
     // Use the D3D device context to update Direct3D device-based resources.
-    const auto context = m_deviceResources->GetD3DDeviceContext();
 
     // Update the model transform buffer for the hologram.
-    context->UpdateSubresource(
-        m_modelConstantBuffer.Get(),
-        0,
-        nullptr,
-        &m_modelConstantBufferData,
-        0,
-        0
-    );
+
 }
 
 // Renders one frame using the vertex and pixel shaders.
@@ -94,6 +168,25 @@ void SpinningCubeRenderer::Render()
     }
 
     const auto context = m_deviceResources->GetD3DDeviceContext();
+
+    context->UpdateSubresource1(
+        m_modelConstantBuffer.Get(),
+        0,
+        nullptr,
+        &m_modelConstantBufferData,
+        0,
+        0,
+        0
+    );
+    context->UpdateSubresource1(
+        m_eyeBuffer.Get(),
+        0,
+        nullptr,
+        &m_eyeBufferData,
+        0,
+        0,
+        0
+    );
 
     // Each vertex is one instance of the VertexPositionColor struct.
     const UINT stride = sizeof(VertexPositionColor);
@@ -120,10 +213,19 @@ void SpinningCubeRenderer::Render()
         0
     );
     // Apply the model constant buffer to the vertex shader.
-    context->VSSetConstantBuffers(
+    context->VSSetConstantBuffers1(
         0,
         1,
-        m_modelConstantBuffer.GetAddressOf()
+        m_modelConstantBuffer.GetAddressOf(),
+        nullptr,
+        nullptr
+    );
+    context->VSSetConstantBuffers1(
+        2,
+        1,
+        m_eyeBuffer.GetAddressOf(),
+        nullptr,
+        nullptr
     );
 
     if (!m_usingVprtShaders)
@@ -147,7 +249,11 @@ void SpinningCubeRenderer::Render()
     );
 
     context->PSSetShaderResources(0, 1, m_triangleTexture.GetAddressOf());
+    context->PSSetShaderResources(1, 1, m_transferFunc.GetAddressOf());
+    //context->PSSetShaderResources(1, 1, m_transferFunc.GetAddressOf());
     context->PSSetSamplers(0, 1, m_triangleTexSamplerState.GetAddressOf());
+    //context->PSSetSamplers(1, 1, m_triangleTexSamplerState.GetAddressOf());
+    context->OMSetBlendState(d3dBlendState, 0, 0xffffffff);
 
     // Draw the objects.
     context->DrawIndexedInstanced(
@@ -197,11 +303,22 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
             &m_inputLayout
         ));
 
-    winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"testInput.dds", &m_Res, &m_triangleTexture));
-    
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"testInput.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"skull.dds", &m_Res, &m_triangleTexture));
+    winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"brain.dds", &m_Res, &m_triangleTexture));
+    // winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"knee.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"panramix.dds", &m_Res, &m_triangleTexture));
+    // winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"bonsai.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"engine.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"lobast.dds", &m_Res, &m_triangleTexture));
+
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"nucleon.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"teapot.dds", &m_Res, &m_triangleTexture));
+    //winrt::check_hresult(CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"hydrogen_atom.dds", &m_Res, &m_triangleTexture));
+
     D3D11_SAMPLER_DESC sampDesc;
     ZeroMemory(&sampDesc, sizeof(sampDesc));
-    sampDesc.Filter = D3D11_FILTER_MAXIMUM_ANISOTROPIC;
+    sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -211,8 +328,24 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
 
     winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateSamplerState(&sampDesc, &m_triangleTexSamplerState));
 
+    D3D11_BLEND_DESC omDesc;
+    ZeroMemory(&omDesc, sizeof(D3D11_BLEND_DESC));
+    omDesc.RenderTarget[0].BlendEnable = true;
+    omDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    omDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    omDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    omDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    omDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    omDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    omDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+
+    winrt::check_hresult(m_deviceResources->GetD3DDevice()->CreateBlendState(&omDesc, &d3dBlendState));
+
     // After the pixel shader file is loaded, create the shader and constant buffer.
-    std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///PixelShader.cso");
+    // std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///MaxDensityPS.cso");
+    std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///ComposityPS.cso");
+    //std::vector<byte> pixelShaderFileData = co_await DX::ReadDataAsync(L"ms-appx:///IsosurfacePS.cso");
     winrt::check_hresult(
         m_deviceResources->GetD3DDevice()->CreatePixelShader(
             pixelShaderFileData.data(),
@@ -222,12 +355,22 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
         ));
 
     const CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+
     winrt::check_hresult(
         m_deviceResources->GetD3DDevice()->CreateBuffer(
             &constantBufferDesc,
             nullptr,
             &m_modelConstantBuffer
         ));
+
+    CD3D11_BUFFER_DESC eyeBufferDesc(sizeof(XMFLOAT4), D3D11_BIND_CONSTANT_BUFFER);
+    winrt::check_hresult(
+        m_deviceResources->GetD3DDevice()->CreateBuffer(
+            &eyeBufferDesc,
+            nullptr,
+            &m_eyeBuffer
+        )
+    );
 
     if (!m_usingVprtShaders)
     {
@@ -248,30 +391,16 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
     // Note that the cube size has changed from the default DirectX app
     // template. Windows Holographic is scaled in meters, so to draw the
     // cube at a comfortable size we made the cube width 0.2 m (20 cm).
-    static const std::array<VertexPositionColor, 12> cubeVertices =
+    static const std::array<VertexPositionColor, 8> cubeVertices =
         { {
-            /*{ XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(1.0f, 1.0f, 0.5f) },
-            { XMFLOAT3(-0.1f, -0.1f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.5f) },
-            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(1.0f, 0.0f, 0.5f) },
-            { XMFLOAT3(-0.1f,  0.1f,  0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },*/
-            // - x
-            { XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(1.0f, 1.0f, 0.5f) },
-            { XMFLOAT3(-0.1f, -0.1f,  0.1f), XMFLOAT3(0.0f, 1.0f, 0.5f) },
-            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(1.0f, 0.0f, 0.5f) },
-            { XMFLOAT3(-0.1f,  0.1f,  0.1f), XMFLOAT3(0.0f, 0.0f, 0.5f) },
-
-            // -z
-            { XMFLOAT3(-0.1f, -0.1f, -0.1f), XMFLOAT3(0.5f, 1.0f, 0.0f) },
-            { XMFLOAT3(0.1f, -0.1f, -0.1f), XMFLOAT3(0.5f, 1.0f, 1.0f) },
-            { XMFLOAT3(0.1f,  0.1f, -0.1f), XMFLOAT3(0.5f, 0.0f, 1.0f) },
-            { XMFLOAT3(-0.1f,  0.1f, -0.1f), XMFLOAT3(0.5f, 0.0f, 0.0f) },
-
-            // +y
-            { XMFLOAT3(-0.1f, 0.1f, -0.1f), XMFLOAT3(1.0f, 0.5f, 0.0f) },
-            { XMFLOAT3(0.1f, 0.1f, -0.1f), XMFLOAT3(1.0f, 0.5f, 1.0f) },
-            { XMFLOAT3(0.1f, 0.1f,  0.1f), XMFLOAT3(0.0f, 0.5f, 1.0f) },
-            { XMFLOAT3(-0.1f, 0.1f,  0.1f), XMFLOAT3(0.0f, 0.5f, 0.0f) },
-            
+            {XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f)},
+            {XMFLOAT3(0.0f, 0.0f, 0.1f), XMFLOAT3(0.0f, 0.0f, 1.0f)},
+            {XMFLOAT3(0.0f, 0.1f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f)},
+            {XMFLOAT3(0.0f, 0.1f, 0.1f), XMFLOAT3(0.0f, 1.0f, 1.0f)},
+            {XMFLOAT3(0.1f, 0.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f)},
+            {XMFLOAT3(0.1f, 0.0f, 0.1f), XMFLOAT3(1.0f, 0.0f, 1.0f)},
+            {XMFLOAT3(0.1f, 0.1f, 0.0f), XMFLOAT3(1.0f, 1.0f, 0.0f)},
+            {XMFLOAT3(0.1f, 0.1f, 0.1f), XMFLOAT3(1.0f, 1.0f, 1.0f)},
         } };
 
     D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
@@ -292,25 +421,36 @@ std::future<void> SpinningCubeRenderer::CreateDeviceDependentResources()
     // 2, 1, and 0 from the vertex buffer compose the
     // first triangle of this mesh.
     // Note that the winding order is clockwise by default.
-    constexpr std::array<unsigned short, 36> cubeIndices =
-        { {
-            2,1,0, // -x
-            2,3,1,
+    static const unsigned short cubeIndices[] =
+    {
 
-            4,5,6, // -z
-            4,6,7,
+        2,0,1, // -x
+        2,1,3,
 
-            8,9,10, // +y
-            8,10,11,
-        } };
+        5,4,6, // +x
+        7,5,6,
 
-    m_indexCount = static_cast<unsigned int>(cubeIndices.size());
+        2,3,7, // -y
+        2,7,6,
+
+        0,5,1, // +y
+        0,4,5,
+
+        0,6,4, // -z
+        0,2,6,
+
+        5,7,1, // +z
+        7,3,1,
+
+    };
+
+    m_indexCount = ARRAYSIZE(cubeIndices);
 
     D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
-    indexBufferData.pSysMem = cubeIndices.data();
+    indexBufferData.pSysMem = cubeIndices;
     indexBufferData.SysMemPitch = 0;
     indexBufferData.SysMemSlicePitch = 0;
-    CD3D11_BUFFER_DESC indexBufferDesc(sizeof(unsigned short) * static_cast<UINT>(cubeIndices.size()), D3D11_BIND_INDEX_BUFFER);
+    CD3D11_BUFFER_DESC indexBufferDesc(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
     winrt::check_hresult(
         m_deviceResources->GetD3DDevice()->CreateBuffer(
             &indexBufferDesc,

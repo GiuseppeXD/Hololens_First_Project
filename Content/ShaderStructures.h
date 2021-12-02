@@ -6,11 +6,17 @@ namespace Hololens_Test
     struct ModelConstantBuffer
     {
         DirectX::XMFLOAT4X4 model;
+        DirectX::XMFLOAT4 eye;
+    };
+
+    struct EyeDirectionConstantBuffer 
+    {
+        DirectX::XMFLOAT4 eye;
     };
 
     // Assert that the constant buffer remains 16-byte aligned (best practice).
-    static_assert((sizeof(ModelConstantBuffer) % (sizeof(float) * 4)) == 0, "Model constant buffer size must be 16-byte aligned (16 bytes is the length of four floats).");
-
+    //static_assert((sizeof(ModelConstantBuffer) % (sizeof(float) * 4)) == 0, "Model constant buffer size must be 16-byte aligned (16 bytes is the length of four floats).");
+    //static_assert((sizeof(EyeDirectionConstantBuffer) % (sizeof(float) * 4)) == 0, "Model constant buffer size must be 16-byte aligned (16 bytes is the length of four floats).");
 
     // Used to send per-vertex data to the vertex shader.
     struct VertexPositionColor
