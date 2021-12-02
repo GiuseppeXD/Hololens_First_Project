@@ -188,6 +188,9 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
+    <FxCompile>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Link>
@@ -208,6 +211,9 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
+    <FxCompile>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
@@ -329,13 +335,23 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Image Include="..\..\Test_Texture\testInput.dds" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
     <Image Include="Assets\SplashScreen.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.scale-200.png" />
     <Image Include="Assets\StoreLogo.png" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Image Include="bonsai.dds" />
+    <Image Include="brain.dds" />
+    <Image Include="engine.dds" />
+    <Image Include="hydrogen_atom.dds" />
+    <Image Include="knee.dds" />
+    <Image Include="lobast.dds" />
+    <Image Include="nucleon.dds" />
+    <Image Include="panramix.dds" />
+    <Image Include="skull.dds" />
+    <Image Include="teapot.dds" />
+    <Image Include="testInput.dds" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppView.h" />
@@ -354,8 +370,12 @@
     <ClCompile Include="Hololens_TestMain.cpp" />
     <ClCompile Include="Common\DeviceResources.cpp" />
     <ClCompile Include="Common\CameraResources.cpp" />
-    <ClCompile Include="Content\SpatialInputHandler.cpp" />
-    <ClCompile Include="Content\SpinningCubeRenderer.cpp" />
+    <ClCompile Include="Content\SpatialInputHandler.cpp">
+      <DeploymentContent>false</DeploymentContent>
+    </ClCompile>
+    <ClCompile Include="Content\SpinningCubeRenderer.cpp">
+      <DeploymentContent>false</DeploymentContent>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -364,22 +384,75 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="bonsai.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="brain.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="engine.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Hololens_Test_TemporaryKey.pfx" />
+    <None Include="hydrogen_atom.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="lobast.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="nucleon.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Panoramix.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="README.md" />
+    <None Include="skull.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="teapot.1dt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="ComposityPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Content\PixelShader.hlsl">
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>5.0</ShaderModel>
+      <DeploymentContent>false</DeploymentContent>
     </FxCompile>
-    <None Include="Content\VertexShaderShared.hlsl" />
+    <FxCompile Include="MaxDensityPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <DeploymentContent>false</DeploymentContent>
+    </FxCompile>
+    <None Include="Content\VertexShaderShared.hlsl">
+      <DeploymentContent>false</DeploymentContent>
+    </None>
     <FxCompile Include="Content\VertexShader.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>5.0</ShaderModel>
+      <DeploymentContent>false</DeploymentContent>
     </FxCompile>
     <FxCompile Include="Content\VPRTVertexShader.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>5.0</ShaderModel>
+      <DeploymentContent>false</DeploymentContent>
     </FxCompile>
     <FxCompile Include="Content\GeometryShader.hlsl">
       <ShaderType>Geometry</ShaderType>

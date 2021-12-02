@@ -95,6 +95,15 @@
     <None Include="packages.config" />
     <None Include="PropertySheet.props" />
     <None Include="README.md" />
+    <None Include="bonsai.1dt" />
+    <None Include="teapot.1dt" />
+    <None Include="engine.1dt" />
+    <None Include="brain.1dt" />
+    <None Include="hydrogen_atom.1dt" />
+    <None Include="nucleon.1dt" />
+    <None Include="lobast.1dt" />
+    <None Include="skull.1dt" />
+    <None Include="Panoramix.1dt" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -103,6 +112,24 @@
     <None Include="Hololens_Test_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\Test_Texture\testInput.dds" />
+    <Image Include="testInput.dds" />
+    <Image Include="bonsai.dds" />
+    <Image Include="knee.dds" />
+    <Image Include="panramix.dds" />
+    <Image Include="engine.dds" />
+    <Image Include="hydrogen_atom.dds" />
+    <Image Include="teapot.dds" />
+    <Image Include="nucleon.dds" />
+    <Image Include="lobast.dds" />
+    <Image Include="brain.dds" />
+    <Image Include="skull.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="MaxDensityPS.hlsl">
+      <Filter>Content\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="ComposityPS.hlsl">
+      <Filter>Content\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

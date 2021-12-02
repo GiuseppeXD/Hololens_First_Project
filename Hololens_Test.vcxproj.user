@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <DebuggerFlavor>UWPRemoteDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <DebuggerFlavor>UWPRemoteDebugger</DebuggerFlavor>
+    <WindowsAppEmulatorID>d8216a90-4f3c-fd95-2c81-df055d702b7c;HoloLens Emulator 10.0.17763.134</WindowsAppEmulatorID>
+    <DebuggerMachineName>192.168.1.103</DebuggerMachineName>
+    <DebuggerRequireAuthentication>Universal</DebuggerRequireAuthentication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <DebuggerFlavor>UWPRemoteDebugger</DebuggerFlavor>
+    <DebuggerMachineName>192.168.1.103</DebuggerMachineName>
+    <DebuggerRequireAuthentication>Universal</DebuggerRequireAuthentication>
+    <WindowsAppEmulatorID>d8216a90-4f3c-fd95-2c81-df055d702b7c;HoloLens Emulator 10.0.17763.134</WindowsAppEmulatorID>
+  </PropertyGroup>
+</Project>
